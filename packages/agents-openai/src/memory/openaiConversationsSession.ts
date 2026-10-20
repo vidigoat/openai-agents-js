@@ -88,11 +88,19 @@ export class OpenAIConversationsSession
                 if (c.type === 'input_text') {
                   return { type: 'input_text', text: c.text };
                 } else if (c.type === 'input_image') {
+                  let imageItem: protocol.InputImage | undefined;
                   if (c.image_url) {
-                    return { type: 'input_image', image: c.image_url };
+                    imageItem = { type: 'input_image', image: c.image_url };
                   } else if (c.file_id) {
-                    return { type: 'input_image', image: { id: c.file_id } };
+                    imageItem = {
+                      type: 'input_image',
+                      image: { id: c.file_id },
+                    };
                   }
+                  if (imageItem && c.detail) {
+                    imageItem.detail = c.detail;
+                  }
+                  return imageItem;
                 } else if (c.type === 'input_file') {
                   if (c.file_data) {
                     const fileItem: protocol.InputFile = {

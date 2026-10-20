@@ -503,6 +503,84 @@ describe('OpenAIConversationsSession', () => {
     ]);
   });
 
+  it('preserves image detail for user inputs', async () => {
+    const items = [
+      {
+        type: 'message',
+        role: 'user',
+        id: 'user-1',
+        content: [
+          {
+            type: 'input_image',
+            image_url: 'https://example.com/a.png',
+            file_id: null,
+            detail: 'low',
+          },
+          {
+            type: 'input_image',
+            image_url: null,
+            file_id: 'file-123',
+            detail: 'high',
+          },
+          {
+            type: 'input_image',
+            image_url: 'https://example.com/b.png',
+            file_id: null,
+          },
+        ],
+      },
+    ];
+
+    const list = vi.fn(() => ({
+      async *[Symbol.asyncIterator]() {
+        for (const item of items) {
+          yield item as any;
+        }
+      },
+    }));
+
+    const session = createSession({
+      client: {
+        conversations: {
+          items: {
+            list,
+            create: vi.fn(),
+            delete: vi.fn(),
+          },
+          create: vi.fn(),
+          delete: vi.fn(),
+        },
+      } as any,
+      conversationId: 'conv-123',
+    });
+
+    const result = await session.getItems();
+
+    expect(result).toEqual([
+      {
+        id: 'user-1',
+        type: 'message',
+        role: 'user',
+        content: [
+          {
+            type: 'input_image',
+            image: 'https://example.com/a.png',
+            detail: 'low',
+          },
+          {
+            type: 'input_image',
+            image: { id: 'file-123' },
+            detail: 'high',
+          },
+          {
+            type: 'input_image',
+            image: 'https://example.com/b.png',
+          },
+        ],
+      },
+    ]);
+  });
+
   it('strips assistant conversation replay metadata only for model input', async () => {
     const session = createSession({
       client: {
